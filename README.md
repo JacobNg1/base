@@ -6,7 +6,7 @@
 - ✏️ 右上角「编辑」按钮：在线读取 / 编辑 YAML 并一键上传更新到 R2（通过 `/api/save` Serverless）
 - 🎨 多套**风格主题** + **明/暗模式**，随时切换（记忆在浏览器）
 - 🔍 顶部搜索、顺应窗口宽度的自适应顶栏、响应式布局
-- 🖼️ 图标三级回退：Google favicon(128px) → 站点 `/favicon.ico` → 清晰首字默认图（内网单机名如 `srv1` 会跳过 Google 直接试 `/favicon.ico`）
+- 🖼️ 图标三级回退：站点 `/favicon.ico` → Google favicon(128px) 兜底 → 清晰首字默认图（自建域名优先用自己的图标，避免 Google 抓不到或返回通用地球图标；内网单机名如 `srv1` 跳过 Google 只试 `/favicon.ico`）
 - ⚡ 纯静态前端 + 一个轻量 Serverless 函数，秒部署
 
 ---

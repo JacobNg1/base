@@ -226,17 +226,17 @@
     img.src = candidates[0];
   }
 
-  // 公网域名：Google favicon(清晰 128px) -> 站点 /favicon.ico；
-  // 内网 / 单机名(如 srv1) Google 抓不到，直接走 /favicon.ico。
+  // 站点自己的 /favicon.ico 优先(自建域名最可靠、最正) -> 公网域名再用 Google favicon(清晰 128px)兜底
+  // -> 都拿不到用清晰首字母。内网 / 单机名(如 srv1) Google 抓不到，只走 /favicon.ico。
   function faviconCandidates(url) {
     try {
       var u = new URL(url, location.href);
       if (!/^https?:$/.test(u.protocol)) return [];
       var list = [];
+      list.push(u.origin + "/favicon.ico");
       if (isPublicHost(u.hostname)) {
         list.push("https://www.google.com/s2/favicons?sz=128&domain=" + encodeURIComponent(u.hostname));
       }
-      list.push(u.origin + "/favicon.ico");
       return list;
     } catch (e) { return []; }
   }
