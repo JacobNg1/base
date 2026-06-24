@@ -97,8 +97,7 @@ body {
 .topbar {
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: 18px;
-  padding: 16px clamp(16px, 4vw, 40px);
-  max-width: var(--maxw); margin: 0 auto;
+  padding: 16px clamp(16px, 4vw, 48px);
   width: 100%;
 }
 .topbar::before {
@@ -215,7 +214,8 @@ body {
     color-mix(in srgb, var(--accent-2) 35%, transparent));
   font-size: 19px; font-weight: 700; color: #fff;
 }
-.card-icon img { width: 26px; height: 26px; object-fit: contain; }
+.card-icon img { width: 26px; height: 26px; object-fit: contain; image-rendering: -webkit-optimize-contrast; }
+.card-icon.letter { color: #fff; font-size: 20px; font-weight: 700; }
 .card-body { min-width: 0; }
 .card-name {
   font-size: 14.5px; font-weight: 600; white-space: nowrap;
@@ -250,6 +250,15 @@ body {
   padding: 22px; box-shadow: var(--shadow);
   animation: pop .22s cubic-bezier(.2,.9,.3,1.2);
 }
+.panel-card-wide { max-width: 760px; max-height: calc(100vh - 40px); overflow: auto; }
+.editor-text {
+  width: 100%; min-height: 320px; resize: vertical; display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13px; line-height: 1.55; tab-size: 2;
+  white-space: pre; overflow: auto; margin-bottom: 14px;
+}
+.editor-status { margin: 0 0 6px; }
+.editor-status.error { color: #f87171; }
 @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .panel-head h2 { margin: 0; font-size: 17px; }

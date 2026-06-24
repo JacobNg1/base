@@ -5,17 +5,19 @@
 # 修改后无需重新部署，刷新页面即可生效。
 # ====================================================================
 
-title: 我的导航
-subtitle: My Web Portal
+title: "📡 基地 / Command Base"
+subtitle: "⚙️ Building, Unit ready. Systems Online."
 # 可选：页脚文字
-footer: Powered by nav-portal
+footer: Powered by Jacob
+
+
 
 groups:
   - name: 服务器 / Servers
     icon: "🖥️"
     items:
       - name: 服务 1
-        url: http://srv1:7890
+        url: http://et-tc-1:6806/
         desc: 内网服务示例
       - name: NAS
         url: http://srv2:5000
@@ -23,6 +25,21 @@ groups:
       - name: 路由器
         url: http://192.168.1.1
         desc: 网关管理
+
+  - name: 我搭建的公网服务 / Self-Hosted Services
+    icon: "🌐️"
+    items:
+      - name: 思源笔记
+        url: https://note.jiso.qzz.io/
+        icon: "https://note.jiso.qzz.io/favicon.ico"
+        desc: 思源笔记
+      - name: 工作室 - Dify
+        url: http://srv2:5000
+        desc: Dify
+      - name: Pane
+        url: https://pane.jiso.qzz.io/
+        desc: 查天气
+
 
   - name: 常用工具 / Tools
     icon: "🧰"
@@ -43,3 +60,32 @@ groups:
         url: https://youtube.com
       - name: Bilibili
         url: https://bilibili.com
+
+
+
+  - name: 局域网          # 分组名
+    icon: "🖥️"           # 分组图标 emoji（可选）
+    items:
+      - name: 微软 Bing 搜索 - 国际版
+        url: https://cn.bing.com/
+        icon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACpElEQVQ4jWWTP4hcVRTGv3Pufe/N7J/8wRBSRKKFBlzExs4UGhCLJKUwqLgRzLopTCEIQlJMkYApDKjNLombuJCwCWmCNpLCwtgKIquyKDG4KEKE6OTNzrx7z/ksdheHyVdezv3O7/yT85/dmn6sHL6QU6og4gAQQDNIUBHBmJwkSI1FMfy7qb6NO6W+BcYXRQQkpShLlEWJwWAD7m4AFMD/RgREhCCwU+qvNRbxJbMsEFi7PYFmOLxR9+tP3S212xMhFoWQdAAGgNtMZllijIfVcnYAFMKDBorqX/NvvXaqto19/X79vmVbq6pKq6oKJGWTYZPFLPs2nhAoHtY9qsq7Fz9f+XkyTs7+w6nFueOdg01KR1NKX6pqM9YSGa1PRETpJEQOtlqtC7u0frB4+dpN0tdOzHaOuXM+FgUA+KjBqAhAYgjIKUFVfwL4Xe++/QEAKmiPjyWOfYYAKVi+Tcgnc7OdrwBgcWnl5MXllZNBw7MpNT5KriNNSVNT03Dy/Ik3O0dU5NfFK1c/Xli69oMEvOpufzZN+l41ykhCbhuQhKaUAMFzC0tXV9xsbffuPadAX5+b7Rx+5/jrr6jwo1hEkDCSBEC5tHydZsatBxRFqSEGDAcDiojTvUfILwIYhHtF9AA3JTFGjeZ2pyzLQzmbbG6jIyeHqgogWaJOlWX5fNCAbBk5JQBACAHDpvkmDqMfUbND5mzREwFqVZQP7969d3TQbLxBEu2qtfzkU09/sdEf7FBViooQNmh6fueRYwGA906ffrx+0H8b4PzWuBcmd01cunDu3O/jsQIA3W5XV1efEQDYvx/ljj33VosYnzCzwRZuK+X827/3D8ysr6MBgJmZH9ntdv1RAlLOnP3wZZUwDcjWxlGd1jt75oPbEOFo+H/r2FxFNrTysAAAAABJRU5ErkJggg=="
+      - name: Microsoft Office 主页
+        url: https://www.office.com/?flight=unauthrefresh&auth=1
+      - name: 我的帐户
+        url: https://portal.microsoftonline.com/account#installs
+      - name: Fast Cloud File Migrations • Mover
+        url: https://www.mover.io/index.html
+      - name: Developer Program | Microsoft 365 Dev Center
+        url: https://developer.microsoft.com/en-us/microsoft-365/dev-program
+        icon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQklEQVQ4jWP87if3nwEH4Nz0iLF+FwNO+UY3BkYmXJLEglEDqGAAxYCRYcl7nPHMECPI+H8n7nTA6D6aDgaHARQDAKgRDRsLiHU6AAAAAElFTkSuQmCC"
+      - name: 蝴蝶 - 来自 Microsoft 必应的图像创建器
+        url: https://www.bing.com/images/create/e89db4e89db6/64f5e0624f0342db8ec6ca07ac35696a?FORM=GENCRE"
+      - name: My files - OneDrive
+        url: https://xv008-my.sharepoint.com/personal/jacobng_xv008_onmicrosoft_com/_layouts/15/onedrive.aspx?view=0
+      - name: Microsoft Update Catalog
+        url: https://www.catalog.update.microsoft.com/Home.aspx
+      - name: Copilot
+        url: https://copilot.microsoft.com/
+      - name: Microsoft Family Safety
+        url: https://account.microsoft.com/family/home
+        icon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQklEQVQ4jWP87if3nwEH4Nz0iLF+FwNO+UY3BkYmXJLEglEDqGAAxYCRYcl7nPHMECPI+H8n7nTA6D6aDgaHARQDAKgRDRsLiHU6AAAAAElFTkSuQmCC"

@@ -12,6 +12,7 @@
     mode: "navportal.mode",
     configUrl: "navportal.configUrl",
     favicon: "navportal.favicon",
+    editToken: "navportal.editToken",
   };
 
   var THEMES = [
@@ -25,11 +26,17 @@
     { id: "mono", name: "极简 Mono", colors: ["#64748b", "#94a3b8"] },
   ];
 
-  var DEFAULT_CONFIG_FILE = "./config.yaml";
+  // 默认远程配置（R2）；远程加载失败时回退到站内 BUNDLED_CONFIG_FILE
+  var DEFAULT_CONFIG_URL = "https://pub-b1378682d2ce4d6c98a22f769b38c6ad.r2.dev/base.yaml";
+  var BUNDLED_CONFIG_FILE = "./config.yaml";
+  // 上传保存配置的后端接口（Vercel Serverless 函数）
+  var SAVE_ENDPOINT = "/api/save";
 
   var $ = function (sel) { return document.querySelector(sel); };
   var root = document.documentElement;
   var allItems = []; // 扁平化，用于搜索
+  var currentConfigText = ""; // 最近一次成功加载的原始配置文本（供编辑器使用）
+  var currentConfigUrl = "";  // 最近一次加载所用的 URL
 
   /* ---------------- 配置加载 ---------------- */
   function getConfigUrl() {
@@ -38,7 +45,11 @@
     if (fromQuery) return fromQuery;
     var saved = localStorage.getItem(LS.configUrl);
     if (saved) return saved;
-    return DEFAULT_CONFIG_FILE;
+    return DEFAULT_CONFIG_URL;
+  }
+
+  function bust(url) {
+    return url + (url.indexOf("?") >= 0 ? "&" : "?") + "_t=" + Date.now();
   }
 
   function parseConfig(text, url) {
@@ -53,26 +64,27 @@
 
   function loadConfig() {
     var url = getConfigUrl();
+    currentConfigUrl = url;
     setStatus("正在加载配置… (" + url + ")");
     // 加 cache-buster，避免 R2/CDN 缓存导致改了不生效
-    var fetchUrl = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_t=" + Date.now();
-    return fetch(fetchUrl, { cache: "no-store" })
+    return fetch(bust(url), { cache: "no-store" })
       .then(function (res) {
         if (!res.ok) throw new Error("HTTP " + res.status);
         return res.text();
       })
       .then(function (text) {
+        currentConfigText = text;
         var cfg = parseConfig(text, url);
         render(cfg);
         clearStatus();
       })
       .catch(function (err) {
         // 远程失败时，回退到内置默认配置
-        if (url !== DEFAULT_CONFIG_FILE) {
+        if (url !== BUNDLED_CONFIG_FILE) {
           setStatus("无法加载远程配置 (" + err.message + ")，已回退到内置配置。可在 ⚙️ 设置中检查链接 / CORS。", true);
-          return fetch(DEFAULT_CONFIG_FILE, { cache: "no-store" })
+          return fetch(bust(BUNDLED_CONFIG_FILE), { cache: "no-store" })
             .then(function (r) { return r.text(); })
-            .then(function (t) { render(parseConfig(t, DEFAULT_CONFIG_FILE)); });
+            .then(function (t) { currentConfigText = t; render(parseConfig(t, BUNDLED_CONFIG_FILE)); });
         }
         setStatus("加载配置失败：" + err.message, true);
       });
@@ -153,20 +165,15 @@
     var icon = document.createElement("div");
     icon.className = "card-icon";
 
-    var faviconUrl = item.icon ? null : getFavicon(url);
     if (item.icon && /^https?:|^data:|\.(png|svg|ico|jpg|jpeg|webp)$/i.test(item.icon)) {
-      icon.innerHTML = '<img alt="" src="' + escapeAttr(item.icon) + '" />';
+      // 显式指定的图标 URL：失败也回退到首字母
+      setIconImage(icon, [item.icon], name);
     } else if (item.icon) {
       icon.textContent = item.icon; // emoji
-    } else if (showFavicon && faviconUrl) {
-      var img = document.createElement("img");
-      img.alt = "";
-      img.loading = "lazy";
-      img.src = faviconUrl;
-      img.onerror = function () { icon.textContent = name.charAt(0).toUpperCase(); };
-      icon.appendChild(img);
+    } else if (showFavicon) {
+      setIconImage(icon, faviconCandidates(url), name);
     } else {
-      icon.textContent = name.charAt(0).toUpperCase();
+      setLetter(icon, name);
     }
 
     var body = document.createElement("div");
@@ -193,12 +200,56 @@
     return { el: a, search: (name + " " + desc + " " + url).toLowerCase() };
   }
 
-  function getFavicon(url) {
+  // 清晰的首字母默认图（带渐变底色）
+  function setLetter(icon, name) {
+    icon.classList.add("letter");
+    var ch = (name || "?").trim().charAt(0).toUpperCase();
+    icon.textContent = ch || "?";
+  }
+
+  // 依次尝试候选图标 URL，全部失败再用清晰的首字母默认图
+  function setIconImage(icon, candidates, name) {
+    candidates = (candidates || []).filter(Boolean);
+    if (!candidates.length) { setLetter(icon, name); return; }
+    var i = 0;
+    var img = document.createElement("img");
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    img.onerror = function () {
+      i += 1;
+      if (i < candidates.length) { img.src = candidates[i]; }
+      else { icon.removeChild(img); setLetter(icon, name); }
+    };
+    icon.appendChild(img);
+    img.src = candidates[0];
+  }
+
+  // 公网域名：Google favicon(清晰 128px) -> 站点 /favicon.ico；
+  // 内网 / 单机名(如 srv1) Google 抓不到，直接走 /favicon.ico。
+  function faviconCandidates(url) {
     try {
       var u = new URL(url, location.href);
-      if (!/^https?:$/.test(u.protocol)) return null;
-      return "https://www.google.com/s2/favicons?sz=64&domain=" + encodeURIComponent(u.hostname);
-    } catch (e) { return null; }
+      if (!/^https?:$/.test(u.protocol)) return [];
+      var list = [];
+      if (isPublicHost(u.hostname)) {
+        list.push("https://www.google.com/s2/favicons?sz=128&domain=" + encodeURIComponent(u.hostname));
+      }
+      list.push(u.origin + "/favicon.ico");
+      return list;
+    } catch (e) { return []; }
+  }
+
+  function isPublicHost(host) {
+    if (!host || host === "localhost") return false;
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
+      if (/^(10\.|127\.|192\.168\.|169\.254\.)/.test(host)) return false;
+      if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+      return true; // 公网 IP
+    }
+    // 需含点且有顶级域；单机名(srv1 / et-tc-1)视为内网
+    return host.indexOf(".") > 0 && /\.[a-z]{2,}$/i.test(host);
   }
   function prettyUrl(url) {
     try { var u = new URL(url, location.href); return u.host + (u.pathname !== "/" ? u.pathname : ""); }
@@ -265,6 +316,92 @@
   function openPanel(id) { $("#" + id).hidden = false; }
   function closePanel(id) { $("#" + id).hidden = true; }
 
+  /* ---------------- 在线编辑配置 ---------------- */
+  function setEditorStatus(msg, isError) {
+    var el = $("#editor-status");
+    el.textContent = msg || "";
+    el.hidden = !msg;
+    el.classList.toggle("error", !!isError);
+  }
+
+  function openEditor() {
+    var ta = $("#editor-text");
+    $("#editor-token").value = localStorage.getItem(LS.editToken) || "";
+    $("#editor-target").textContent = currentConfigUrl || DEFAULT_CONFIG_URL;
+    ta.value = currentConfigText || "";
+    setEditorStatus("正在拉取当前配置…");
+    openPanel("editor-panel");
+    // 重新拉取线上最新文本，保证编辑的是最新版本
+    fetch(bust(currentConfigUrl || DEFAULT_CONFIG_URL), { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(function (t) { ta.value = t; currentConfigText = t; setEditorStatus(""); })
+      .catch(function (e) { setEditorStatus("无法拉取最新配置(" + e.message + ")，已载入上次内容。", true); });
+  }
+
+  function saveEditor() {
+    var content = $("#editor-text").value;
+    var token = $("#editor-token").value.trim();
+    // 先校验能否解析，避免把坏配置传上去
+    try { parseConfig(content, currentConfigUrl || DEFAULT_CONFIG_URL); }
+    catch (e) { setEditorStatus("解析失败，请检查格式：" + e.message, true); return; }
+    if (token) localStorage.setItem(LS.editToken, token);
+    else localStorage.removeItem(LS.editToken);
+    setEditorStatus("正在上传…");
+    fetch(SAVE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: content, password: token }),
+    })
+      .then(function (r) {
+        return r.text().then(function (txt) {
+          var data = {};
+          try { data = txt ? JSON.parse(txt) : {}; } catch (e) {}
+          return { ok: r.ok, status: r.status, data: data };
+        });
+      })
+      .then(function (res) {
+        if (res.ok) {
+          currentConfigText = content;
+          setEditorStatus("已上传更新，正在刷新…");
+          setTimeout(function () { closePanel("editor-panel"); loadConfig(); }, 400);
+          return;
+        }
+        if (res.status === 401) { setEditorStatus("编辑口令错误，无法上传。", true); return; }
+        if (res.status === 404 || res.status === 501) {
+          setEditorStatus("后端上传未配置 (/api/save 不可用)。请用下方「下载 / 复制」手动更新 R2，或在 Vercel 配置环境变量。", true);
+          return;
+        }
+        setEditorStatus("上传失败：" + (res.data.error || ("HTTP " + res.status)), true);
+      })
+      .catch(function (e) {
+        setEditorStatus("上传失败：" + e.message + "（可改用下方「下载 / 复制」手动更新）", true);
+      });
+  }
+
+  function downloadEditor() {
+    var blob = new Blob([$("#editor-text").value], { type: "text/yaml;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "base.yaml";
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    setEditorStatus("已下载 base.yaml，可手动上传到 R2。");
+  }
+
+  function copyEditor() {
+    var content = $("#editor-text").value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(content).then(
+        function () { setEditorStatus("已复制到剪贴板。"); },
+        function () { setEditorStatus("复制失败，请手动选择复制。", true); }
+      );
+    } else {
+      $("#editor-text").select();
+      try { document.execCommand("copy"); setEditorStatus("已复制到剪贴板。"); }
+      catch (e) { setEditorStatus("复制失败，请手动选择复制。", true); }
+    }
+  }
+
   /* ---------------- 工具 ---------------- */
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -289,7 +426,11 @@
       applyMode(root.getAttribute("data-mode") === "dark" ? "light" : "dark");
     });
     $("#theme-btn").addEventListener("click", function () { openPanel("theme-panel"); });
+    $("#edit-btn").addEventListener("click", openEditor);
     $("#settings-btn").addEventListener("click", function () { openPanel("settings-panel"); });
+    $("#editor-save").addEventListener("click", saveEditor);
+    $("#editor-download").addEventListener("click", downloadEditor);
+    $("#editor-copy").addEventListener("click", copyEditor);
     document.querySelectorAll("[data-close]").forEach(function (b) {
       b.addEventListener("click", function () { closePanel(b.dataset.close); });
     });
