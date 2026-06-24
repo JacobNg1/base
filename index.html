@@ -38,6 +38,7 @@
         <span class="mode-sun">☀️</span><span class="mode-moon">🌙</span>
       </button>
       <button id="theme-btn" class="icon-btn" title="切换风格" aria-label="切换风格">🎨</button>
+      <button id="edit-btn" class="icon-btn" title="编辑配置" aria-label="编辑配置">✏️</button>
       <button id="settings-btn" class="icon-btn" title="设置" aria-label="设置">⚙️</button>
     </div>
   </header>
@@ -70,8 +71,8 @@
         <button class="icon-btn panel-close" data-close="settings-panel">✕</button>
       </div>
       <label class="field-label" for="config-url">配置文件链接 (YAML / JSON)</label>
-      <input id="config-url" type="url" class="text-input" placeholder="https://your-bucket.r2.dev/config.yaml" />
-      <p class="hint">填入你的 R2 / 任意公开链接。留空则使用网站内置的 <code>config.yaml</code>。链接会保存在本浏览器。</p>
+      <input id="config-url" type="url" class="text-input" placeholder="https://your-bucket.r2.dev/base.yaml" />
+      <p class="hint">填入你的 R2 / 任意公开链接。留空则使用默认的 R2 链接（加载失败会回退到站内 <code>config.yaml</code>）。链接保存在本浏览器。</p>
       <div class="field-row">
         <label class="switch">
           <input type="checkbox" id="favicon-toggle" checked />
@@ -81,6 +82,26 @@
       <div class="panel-actions">
         <button id="config-reset" class="btn btn-ghost">恢复默认</button>
         <button id="config-save" class="btn btn-primary">保存并刷新</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 在线编辑配置面板 -->
+  <div id="editor-panel" class="panel" hidden>
+    <div class="panel-card panel-card-wide">
+      <div class="panel-head">
+        <h2>编辑配置</h2>
+        <button class="icon-btn panel-close" data-close="editor-panel">✕</button>
+      </div>
+      <p class="hint">目标：<code id="editor-target"></code>。保存会通过 <code>/api/save</code> 写回 R2（需在 Vercel 配置环境变量 + 编辑口令）；未配置时可用「下载 / 复制」手动更新。</p>
+      <textarea id="editor-text" class="text-input editor-text" spellcheck="false" autocomplete="off" placeholder="# YAML / JSON 配置内容…"></textarea>
+      <label class="field-label" for="editor-token">编辑口令 (与 Vercel 环境变量 EDIT_PASSWORD 一致)</label>
+      <input id="editor-token" type="password" class="text-input" placeholder="上传时需要；未设置 EDIT_PASSWORD 可留空" autocomplete="off" />
+      <div id="editor-status" class="hint editor-status" hidden></div>
+      <div class="panel-actions">
+        <button id="editor-copy" class="btn btn-ghost">复制</button>
+        <button id="editor-download" class="btn btn-ghost">下载</button>
+        <button id="editor-save" class="btn btn-primary">上传并更新</button>
       </div>
     </div>
   </div>
