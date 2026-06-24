@@ -1,0 +1,45 @@
+# ====================================================================
+# 个人导航配置 (default config)
+# 你可以直接编辑这个文件，或者把它放到 R2 / 任意可公开访问的链接，
+# 然后在网站右上角「设置」里填入该链接（支持 .yaml / .yml / .json）。
+# 修改后无需重新部署，刷新页面即可生效。
+# ====================================================================
+
+title: 我的导航
+subtitle: My Web Portal
+# 可选：页脚文字
+footer: Powered by nav-portal
+
+groups:
+  - name: 服务器 / Servers
+    icon: "🖥️"
+    items:
+      - name: 服务 1
+        url: http://srv1:7890
+        desc: 内网服务示例
+      - name: NAS
+        url: http://srv2:5000
+        desc: 群晖 / 文件
+      - name: 路由器
+        url: http://192.168.1.1
+        desc: 网关管理
+
+  - name: 常用工具 / Tools
+    icon: "🧰"
+    items:
+      - name: GitHub
+        url: https://github.com
+        desc: 代码仓库
+      - name: ChatGPT
+        url: https://chat.openai.com
+      - name: Vercel
+        url: https://vercel.com/dashboard
+        desc: 部署面板
+
+  - name: 媒体 / Media
+    icon: "🎬"
+    items:
+      - name: YouTube
+        url: https://youtube.com
+      - name: Bilibili
+        url: https://bilibili.com
