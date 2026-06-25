@@ -10,10 +10,13 @@
   var LS = {
     theme: "navportal.theme",
     mode: "navportal.mode",
+    autoMode: "navportal.autoMode",
     configUrl: "navportal.configUrl",
     favicon: "navportal.favicon",
     editToken: "navportal.editToken",
   };
+
+  var RANDOM_THEME = "random"; // 风格选「随机」：每次打开随机挑一套
 
   var THEMES = [
     { id: "aurora", name: "极光 Aurora", colors: ["#6366f1", "#22d3ee"] },
@@ -286,20 +289,46 @@
   }
 
   /* ---------------- 主题 / 模式 ---------------- */
-  function applyTheme(id) {
-    root.setAttribute("data-theme", id);
-    localStorage.setItem(LS.theme, id);
+  function pickRandomThemeId() {
+    return THEMES[Math.floor(Math.random() * THEMES.length)].id;
+  }
+  // sel 可为具体风格 id 或 "random"。选 random 时实际显示随机一套，但记住选择仍是 random（下次打开再随机）。
+  function applyTheme(sel) {
+    localStorage.setItem(LS.theme, sel);
+    var actual = sel === RANDOM_THEME ? pickRandomThemeId() : sel;
+    root.setAttribute("data-theme", actual);
     document.querySelectorAll(".theme-chip").forEach(function (chip) {
-      chip.classList.toggle("active", chip.dataset.theme === id);
+      chip.classList.toggle("active", chip.dataset.theme === sel);
     });
   }
-  function applyMode(mode) {
+
+  // 按系统时间判断明暗：白天 7:00–19:00 亮色，其余暗色
+  function computeAutoMode() {
+    var h = new Date().getHours();
+    return (h >= 7 && h < 19) ? "light" : "dark";
+  }
+  function isAutoMode() {
+    return localStorage.getItem(LS.autoMode) !== "0"; // 默认开
+  }
+  function setMode(mode) {
     root.setAttribute("data-mode", mode);
     localStorage.setItem(LS.mode, mode);
   }
+  // 自动模式开启时，按当前时间刷新明暗（不改用户的手动记忆值）
+  function refreshAutoMode() {
+    if (isAutoMode()) root.setAttribute("data-mode", computeAutoMode());
+  }
+
   function buildThemeGrid() {
     var grid = $("#theme-grid");
     grid.innerHTML = "";
+    var randomChip = document.createElement("button");
+    randomChip.className = "theme-chip";
+    randomChip.dataset.theme = RANDOM_THEME;
+    randomChip.innerHTML =
+      '<span class="theme-swatch theme-swatch-random">🎲</span><span>随机 Random</span>';
+    randomChip.addEventListener("click", function () { applyTheme(RANDOM_THEME); });
+    grid.appendChild(randomChip);
     THEMES.forEach(function (t) {
       var chip = document.createElement("button");
       chip.className = "theme-chip";
@@ -412,19 +441,26 @@
 
   /* ---------------- 初始化 ---------------- */
   function init() {
-    applyMode(localStorage.getItem(LS.mode) || "dark");
-    applyTheme(localStorage.getItem(LS.theme) || "aurora");
+    // 明暗：自动模式(默认开)按系统时间，否则用记忆值
+    if (isAutoMode()) setMode(computeAutoMode());
+    else setMode(localStorage.getItem(LS.mode) || "dark");
     buildThemeGrid();
-    applyTheme(localStorage.getItem(LS.theme) || "aurora"); // 同步选中态
+    applyTheme(localStorage.getItem(LS.theme) || RANDOM_THEME); // 默认随机风格
 
     // 设置面板初值
     $("#config-url").value = localStorage.getItem(LS.configUrl) || "";
     $("#favicon-toggle").checked = localStorage.getItem(LS.favicon) !== "0";
+    $("#auto-mode-toggle").checked = isAutoMode();
 
-    // 事件
+    // 事件：手动切换明暗会临时关掉自动，保留你的选择
     $("#mode-toggle").addEventListener("click", function () {
-      applyMode(root.getAttribute("data-mode") === "dark" ? "light" : "dark");
+      localStorage.setItem(LS.autoMode, "0");
+      $("#auto-mode-toggle").checked = false;
+      setMode(root.getAttribute("data-mode") === "dark" ? "light" : "dark");
     });
+
+    // 自动模式开启时，每分钟按系统时间评估一次明暗
+    setInterval(refreshAutoMode, 60000);
     $("#theme-btn").addEventListener("click", function () { openPanel("theme-panel"); });
     $("#edit-btn").addEventListener("click", openEditor);
     $("#settings-btn").addEventListener("click", function () { openPanel("settings-panel"); });
@@ -451,6 +487,9 @@
       if (url) localStorage.setItem(LS.configUrl, url);
       else localStorage.removeItem(LS.configUrl);
       localStorage.setItem(LS.favicon, $("#favicon-toggle").checked ? "1" : "0");
+      var autoOn = $("#auto-mode-toggle").checked;
+      localStorage.setItem(LS.autoMode, autoOn ? "1" : "0");
+      if (autoOn) setMode(computeAutoMode());
       closePanel("settings-panel");
       loadConfig();
     });
@@ -459,6 +498,9 @@
       $("#config-url").value = "";
       $("#favicon-toggle").checked = true;
       localStorage.setItem(LS.favicon, "1");
+      $("#auto-mode-toggle").checked = true;
+      localStorage.setItem(LS.autoMode, "1");
+      setMode(computeAutoMode());
       closePanel("settings-panel");
       loadConfig();
     });

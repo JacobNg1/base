@@ -274,6 +274,9 @@ body {
 .theme-chip.active { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
 .theme-swatch { width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+.theme-swatch-random { display: flex; align-items: center; justify-content: center;
+  font-size: 17px; line-height: 1;
+  background: conic-gradient(from 0deg, #6366f1, #22d3ee, #10b981, #eab308, #fb7185, #8b5cf6, #6366f1); }
 .theme-chip span { font-size: 13.5px; font-weight: 600; }
 
 .field-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
