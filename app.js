@@ -10,6 +10,8 @@
   var LS = {
     theme: "navportal.theme",
     mode: "navportal.mode",
+    autoMode: "navportal.autoMode",
+    randomTheme: "navportal.randomTheme",
     configUrl: "navportal.configUrl",
     favicon: "navportal.favicon",
     editToken: "navportal.editToken",
@@ -25,6 +27,18 @@
     { id: "gold", name: "鎏金 Gold", colors: ["#eab308", "#f97316"] },
     { id: "mono", name: "极简 Mono", colors: ["#64748b", "#94a3b8"] },
   ];
+
+  /* 根据系统时间判断明暗模式：6:00-18:00 亮色，其余暗色 */
+  function getSystemMode() {
+    var hour = new Date().getHours();
+    return (hour >= 6 && hour < 18) ? "light" : "dark";
+  }
+
+  /* 从 THEMES 中随机选取一个 */
+  function pickRandomTheme() {
+    var idx = Math.floor(Math.random() * THEMES.length);
+    return THEMES[idx].id;
+  }
 
   // 默认远程配置（R2）；远程加载失败时回退到站内 BUNDLED_CONFIG_FILE
   var DEFAULT_CONFIG_URL = "https://pub-b1378682d2ce4d6c98a22f769b38c6ad.r2.dev/base.yaml";
@@ -289,17 +303,39 @@
   function applyTheme(id) {
     root.setAttribute("data-theme", id);
     localStorage.setItem(LS.theme, id);
-    document.querySelectorAll(".theme-chip").forEach(function (chip) {
-      chip.classList.toggle("active", chip.dataset.theme === id);
-    });
+    updateThemeChipActive();
   }
   function applyMode(mode) {
     root.setAttribute("data-mode", mode);
     localStorage.setItem(LS.mode, mode);
   }
+  function updateThemeChipActive() {
+    var isRandom = localStorage.getItem(LS.randomTheme) !== "0";
+    var currentTheme = localStorage.getItem(LS.theme) || "aurora";
+    document.querySelectorAll(".theme-chip").forEach(function (chip) {
+      if (isRandom) {
+        chip.classList.toggle("active", chip.dataset.theme === "random");
+      } else {
+        chip.classList.toggle("active", chip.dataset.theme === currentTheme);
+      }
+    });
+  }
   function buildThemeGrid() {
     var grid = $("#theme-grid");
     grid.innerHTML = "";
+
+    // 随机选项
+    var randomChip = document.createElement("button");
+    randomChip.className = "theme-chip";
+    randomChip.dataset.theme = "random";
+    randomChip.innerHTML =
+      '<span class="theme-swatch random-swatch"></span><span>随机 🎲</span>';
+    randomChip.addEventListener("click", function () {
+      localStorage.setItem(LS.randomTheme, "1");
+      applyTheme(pickRandomTheme());
+    });
+    grid.appendChild(randomChip);
+
     THEMES.forEach(function (t) {
       var chip = document.createElement("button");
       chip.className = "theme-chip";
@@ -307,7 +343,10 @@
       chip.innerHTML =
         '<span class="theme-swatch" style="background:linear-gradient(135deg,' +
         t.colors[0] + "," + t.colors[1] + ')"></span><span>' + t.name + "</span>";
-      chip.addEventListener("click", function () { applyTheme(t.id); });
+      chip.addEventListener("click", function () {
+        localStorage.setItem(LS.randomTheme, "0");
+        applyTheme(t.id);
+      });
       grid.appendChild(chip);
     });
   }
@@ -412,14 +451,30 @@
 
   /* ---------------- 初始化 ---------------- */
   function init() {
-    applyMode(localStorage.getItem(LS.mode) || "dark");
-    applyTheme(localStorage.getItem(LS.theme) || "aurora");
+    // 自动明暗模式（默认开启）
+    var autoMode = localStorage.getItem(LS.autoMode) !== "0";
+    if (autoMode) {
+      applyMode(getSystemMode());
+    } else {
+      applyMode(localStorage.getItem(LS.mode) || "dark");
+    }
+
+    // 随机风格（默认开启）
+    var randomTheme = localStorage.getItem(LS.randomTheme) !== "0";
+    if (randomTheme) {
+      applyTheme(pickRandomTheme());
+    } else {
+      applyTheme(localStorage.getItem(LS.theme) || "aurora");
+    }
+
     buildThemeGrid();
-    applyTheme(localStorage.getItem(LS.theme) || "aurora"); // 同步选中态
+    updateThemeChipActive(); // 同步选中态
 
     // 设置面板初值
     $("#config-url").value = localStorage.getItem(LS.configUrl) || "";
     $("#favicon-toggle").checked = localStorage.getItem(LS.favicon) !== "0";
+    $("#auto-mode-toggle").checked = autoMode;
+    $("#random-theme-toggle").checked = randomTheme;
 
     // 事件
     $("#mode-toggle").addEventListener("click", function () {
@@ -451,13 +506,19 @@
       if (url) localStorage.setItem(LS.configUrl, url);
       else localStorage.removeItem(LS.configUrl);
       localStorage.setItem(LS.favicon, $("#favicon-toggle").checked ? "1" : "0");
+      localStorage.setItem(LS.autoMode, $("#auto-mode-toggle").checked ? "1" : "0");
+      localStorage.setItem(LS.randomTheme, $("#random-theme-toggle").checked ? "1" : "0");
       closePanel("settings-panel");
       loadConfig();
     });
     $("#config-reset").addEventListener("click", function () {
       localStorage.removeItem(LS.configUrl);
+      localStorage.removeItem(LS.autoMode);
+      localStorage.removeItem(LS.randomTheme);
       $("#config-url").value = "";
       $("#favicon-toggle").checked = true;
+      $("#auto-mode-toggle").checked = true;
+      $("#random-theme-toggle").checked = true;
       localStorage.setItem(LS.favicon, "1");
       closePanel("settings-panel");
       loadConfig();
